@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
+import { resolveProductAssets } from './AssetResolver';
 
 const BaseComponent = ({
     product,
@@ -11,15 +12,22 @@ const BaseComponent = ({
     defaultColor = "#888888",
     exploded = false,
     offset = [0, 0, 0],
+    explodedPosition = null, // Absolute position for exploded view
     compatibility,
     geometry = "box", // "box" or "cylinder"
     opacity = 1,
     transparent = false,
     wireframe = false,
-    rgbEnabled = false
+    rgbEnabled = false,
+    children
 }) => {
     const meshRef = useRef();
     const [hovered, setHovered] = useState(false);
+    const texture = null; // Removed image mapping as requested
+
+    // Resolve product-specific parameters
+    const assetData = React.useMemo(() => resolveProductAssets(product), [product]);
+    const params = assetData?.params || {};
 
     // Pop-in animation when component is replaced
     useEffect(() => {
@@ -30,13 +38,23 @@ const BaseComponent = ({
 
     // Smooth transition for exploded view and scale
     useFrame((state, delta) => {
-        const targetPos = exploded
-            ? new THREE.Vector3(position[0] + offset[0], position[1] + offset[1], position[2] + offset[2])
-            : new THREE.Vector3(...position);
+        let targetPos;
+        if (exploded) {
+            targetPos = explodedPosition 
+                ? new THREE.Vector3(...explodedPosition) 
+                : new THREE.Vector3(position[0] + offset[0], position[1] + offset[1], position[2] + offset[2]);
+        } else {
+            targetPos = new THREE.Vector3(...position);
+        }
 
         if (meshRef.current) {
             meshRef.current.position.lerp(targetPos, 5 * delta);
             meshRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), 8 * delta);
+        }
+        
+        // Add a gentle rotation if we have a texture to give a 360 feel
+        if (meshRef.current && texture && !hovered) {
+            meshRef.current.rotation.y += delta * 0.2;
         }
     });
 
@@ -77,26 +95,33 @@ const BaseComponent = ({
         emissiveIntensity = hovered ? 0.3 : 0.1;
     }
 
-    const currentColor = isSpecificallyIncompatible ? "#aa0000" : defaultColor;
+    // If we have a texture, we make the base color white so the image colors are preserved
+    const currentColor = texture ? (isSpecificallyIncompatible ? "#ffaaaa" : "#ffffff") : (isSpecificallyIncompatible ? "#aa0000" : defaultColor);
 
     return (
         <group ref={meshRef} position={position}>
-            <mesh
-                castShadow
-                receiveShadow
+            <group
                 onPointerOver={(e) => { e.stopPropagation(); setHovered(true); }}
                 onPointerOut={(e) => { e.stopPropagation(); setHovered(false); }}
             >
-                {geometry === 'box' ? <boxGeometry args={size} /> : <cylinderGeometry args={size} />}
-                <meshStandardMaterial
-                    color={currentColor}
-                    emissive={glowColor}
-                    emissiveIntensity={emissiveIntensity}
-                    transparent={transparent}
-                    opacity={opacity}
-                    wireframe={wireframe}
-                />
-            </mesh>
+                {/* Allow components to pass a custom render function for complex procedural models */}
+                {typeof children === 'function' ? (
+                    children({ color: currentColor, texture, emissive: glowColor, emissiveIntensity, isSpecificallyIncompatible, rgbEnabled, params })
+                ) : (
+                    <mesh castShadow receiveShadow>
+                        {geometry === 'box' ? <boxGeometry args={size} /> : <cylinderGeometry args={size} />}
+                        <meshStandardMaterial
+                            color={currentColor}
+                            map={texture}
+                            emissive={glowColor}
+                            emissiveIntensity={emissiveIntensity}
+                            transparent={transparent}
+                            opacity={opacity}
+                            wireframe={wireframe}
+                        />
+                    </mesh>
+                )}
+            </group>
 
             {/* Hover Tooltip */}
             {hovered && (

@@ -1,6 +1,7 @@
 import React, { Suspense, useRef, useState, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, Float, Stars, Center } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 import Motherboard from './Motherboard';
 import CPU from './CPU';
@@ -61,7 +62,7 @@ const Scene = ({ selectedComponents, compatibility, exploded, rgbEnabled }) => {
             {/* 3D Canvas */}
             <Canvas
                 shadows
-                dpr={[1, 2]}
+                dpr={[1, 1.5]}
                 camera={{ position: [8, 5, 10], fov: 45 }}
                 gl={{ preserveDrawingBuffer: true, antialias: true, powerPreference: "high-performance" }}
                 ref={canvasRef}
@@ -81,9 +82,11 @@ const Scene = ({ selectedComponents, compatibility, exploded, rgbEnabled }) => {
 
                     {rgbEnabled && (
                         <>
-                            <pointLight position={[0, 2, 0]} intensity={2} color="#a855f7" distance={10} />
-                            <pointLight position={[2, -1, 2]} intensity={1.5} color="#3b82f6" distance={10} />
-                            <pointLight position={[-2, -1, 2]} intensity={1.5} color="#ec4899" distance={10} />
+                            <pointLight position={[0, 2, 2]} intensity={3} color="#a855f7" distance={12} />
+                            <pointLight position={[2, -1, 3]} intensity={2.5} color="#3b82f6" distance={12} />
+                            <pointLight position={[-2, -1, 3]} intensity={2.5} color="#ec4899" distance={12} />
+                            <pointLight position={[0, -2, 1]} intensity={2} color="#06b6d4" distance={10} />
+                            <pointLight position={[1, 3, 0]} intensity={1.5} color="#f43f5e" distance={10} />
                         </>
                     )}
 
@@ -113,6 +116,7 @@ const Scene = ({ selectedComponents, compatibility, exploded, rgbEnabled }) => {
                         scale={15}
                         blur={2}
                         far={5}
+                        frames={1}
                         color="#000000"
                         resolution={256}
                     />
@@ -121,12 +125,23 @@ const Scene = ({ selectedComponents, compatibility, exploded, rgbEnabled }) => {
                 <OrbitControls
                     ref={controlsRef}
                     makeDefault
-                    autoRotate={!exploded}
-                    autoRotateSpeed={0.5}
+                    autoRotate={false}
                     enableDamping
                     minDistance={5}
                     maxDistance={25}
                 />
+
+                {/* Bloom glow effect for RGB */}
+                {rgbEnabled && (
+                    <EffectComposer>
+                        <Bloom 
+                            intensity={0.8}
+                            luminanceThreshold={0.4}
+                            luminanceSmoothing={0.9}
+                            mipmapBlur={false}
+                        />
+                    </EffectComposer>
+                )}
             </Canvas>
 
             {/* Incompatible Overlay Alert */}

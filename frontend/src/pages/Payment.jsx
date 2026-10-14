@@ -794,16 +794,16 @@ const Payment = () => {
                                 {paymentMethod === 'UPI' && (
                                     <motion.div key="upi" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
                                         <div className="flex flex-col items-center p-6 bg-white/3 rounded-2xl border border-white/10">
-                                            <div className="p-4 bg-white rounded-2xl mb-4 shadow-xl hover:scale-105 transition-transform duration-300">
+                                            <div className="p-3 bg-white rounded-2xl mb-4 shadow-xl hover:scale-105 transition-transform duration-300">
                                                 <img
-                                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=buildmypc@okaxis&pn=Build%20My%20PC&am=${Math.round(totalAmount)}&cu=INR`}
+                                                    src="/upi-qr.jpg"
                                                     alt="UPI QR Code"
-                                                    className="w-44 h-44 object-contain"
+                                                    className="w-56 h-auto rounded-xl object-contain"
                                                 />
                                             </div>
-                                            <p className="font-bold text-lg">Build My PC</p>
-                                            <p className="text-gray-400 text-sm font-mono bg-black/40 px-3 py-1 rounded-lg mt-1">buildmypc@okaxis</p>
-                                            <p className="text-blue-400 text-xs mt-3 animate-pulse">📱 Scan with any UPI app</p>
+                                            <p className="font-bold text-lg">BuildMyPC</p>
+                                            <p className="text-gray-400 text-sm font-mono bg-black/40 px-3 py-1 rounded-lg mt-1">BuildMyPc@okicici</p>
+                                            <p className="text-blue-400 text-xs mt-3 animate-pulse">📱 Scan to pay with any UPI app</p>
                                             <div className="flex gap-3 mt-4 text-xs text-gray-500">
                                                 {['GPay', 'PhonePe', 'Paytm', 'BHIM'].map(app => (
                                                     <span key={app} className="bg-white/5 px-2 py-1 rounded-lg">{app}</span>

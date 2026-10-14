@@ -1,7 +1,6 @@
 import React from 'react';
 import CompatibilityStatus from './CompatibilityStatus';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { calculatePerformance } from '../utils/performanceRating';
 import toast from 'react-hot-toast';
 
@@ -35,23 +34,82 @@ const BuildSummary = ({
         return acc + (comp.specs?.wattage || 0);
     }, 0);
 
-    const exportToPDF = async () => {
-        const element = document.getElementById('build-summary-card');
-        if (!element) return;
-
+    const exportToPDF = () => {
         const loadToast = toast.loading('Generating PDF...');
         try {
-            const canvas = await html2canvas(element, {
-                backgroundColor: '#030303',
-                scale: 2
-            });
-            const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgProps = pdf.getImageProperties(imgData);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+            const margin = 20;
+            let y = margin;
 
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+            // Title
+            pdf.setFontSize(24);
+            pdf.setTextColor(40, 40, 40);
+            pdf.text('Build My PC', margin, y);
+            
+            pdf.setFontSize(14);
+            pdf.setTextColor(100, 100, 100);
+            y += 8;
+            pdf.text('Custom PC Build Summary', margin, y);
+            
+            y += 15;
+            pdf.setDrawColor(200, 200, 200);
+            pdf.setLineWidth(0.5);
+            pdf.line(margin, y, 210 - margin, y);
+            y += 12;
+
+            // Table Header
+            pdf.setFontSize(12);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Category', margin, y);
+            pdf.text('Component', margin + 40, y);
+            pdf.text('Price (INR)', 210 - margin, y, { align: 'right' });
+            
+            y += 4;
+            pdf.setLineWidth(0.2);
+            pdf.line(margin, y, 210 - margin, y);
+            y += 10;
+
+            // Components List
+            pdf.setFont('helvetica', 'normal');
+            componentCategories.forEach(({ key, label }) => {
+                const comp = selectedComponents[key];
+                if (comp) {
+                    pdf.setFont('helvetica', 'bold');
+                    pdf.text(label, margin, y);
+                    
+                    pdf.setFont('helvetica', 'normal');
+                    const name = comp.name.length > 50 ? comp.name.substring(0, 47) + '...' : comp.name;
+                    pdf.text(name, margin + 40, y);
+                    
+                    pdf.text(comp.price.toLocaleString(), 210 - margin, y, { align: 'right' });
+                    y += 10;
+                }
+            });
+
+            // Estimated Wattage
+            if (estimatedWattage > 0) {
+                y += 5;
+                pdf.setFontSize(10);
+                pdf.setTextColor(100, 100, 100);
+                pdf.text(`Estimated Power Draw: ${estimatedWattage}W`, margin, y);
+                y += 5;
+            }
+
+            // Line before total
+            y += 5;
+            pdf.setDrawColor(150, 150, 150);
+            pdf.setLineWidth(0.5);
+            pdf.line(margin, y, 210 - margin, y);
+            y += 12;
+
+            // Total Price
+            pdf.setFontSize(16);
+            pdf.setTextColor(0, 0, 0);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text('Total Price:', margin + 40, y);
+            pdf.text(`Rs. ${totalPrice.toLocaleString()}`, 210 - margin, y, { align: 'right' });
+
             pdf.save('my-pc-build.pdf');
             toast.success('Build exported as PDF!', { id: loadToast });
         } catch (error) {
